@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h2>Kokoro TTS Lab</h2>
+    <textarea id="text" rows="4" cols="50">Enter text here...</textarea><br><br>
+    <button onclick="generateSpeech()">Speak</button>
+    <br><br>
+    <audio id="player" controls autoplay></audio>
+
+    <script>
+        async function generateSpeech() {
+            const text = document.getElementById('text').value;
+            const url = `http://localhost:8880/speak?text=${encodeURIComponent(text)}&voice=af_bella`;
+            
+            const response = await fetch(url, { method: 'POST' });
+            const blob = await response.blob();
+            const audioUrl = URL.createObjectURL(blob);
+            
+            document.getElementById('player').src = audioUrl;
+        }
+    </script>
+</body>
+</html>
