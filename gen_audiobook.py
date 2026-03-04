@@ -99,7 +99,7 @@ def stitch_wav_files(wav_files, output_path, silence_ms=0):
 
     print(f"Successfully stitched {len(wav_files)} files into {output_path}")
 
-if __name__ == "__main__":
+def parse_arguments():
     parser = argparse.ArgumentParser(description="Generate audiobook from text file using Kokoro TTS Server.")
     parser.add_argument("text_file_path", help="Path to the input text file")
     parser.add_argument("--voice", default="af_bella", help="Voice to use (default: af_bella)")
@@ -107,18 +107,16 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", default="audio_chunks", help="Directory to save audio chunks")
     parser.add_argument("--silence", type=int, default=200, help="Silence between chunks in milliseconds (default: 300)")
     parser.add_argument("--delay", type=float, default=0.0, help="Delay in seconds between processing chunks (default: 0.0)")
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    paragraphs = get_paragraphs(args.text_file_path)
-    
+def generate_audio_chunks(paragraphs, voice, speed, output_dir, delay):
+    generated_files = []
     print(f"Found {len(paragraphs)} paragraphs. Generating audio...")
     
-    generated_files = []
-    
     for i, paragraph in enumerate(paragraphs):
-        if i > 0 and args.delay > 0:
-            print(f"Cooling down for {args.delay} seconds...")
-            time.sleep(args.delay)
+        if i > 0 and delay > 0:
+            print(f"Cooling down for {delay} seconds...")
+            time.sleep(delay)
 
         print(f"Processing paragraph {i+1}/{len(paragraphs)}...")
         # Skip empty paragraphs just in case
@@ -127,14 +125,23 @@ if __name__ == "__main__":
             
         file_path = generate_tts_for_paragraph(
             text=paragraph, 
-            voice=args.voice, 
-            speed=args.speed, 
-            output_dir=args.output_dir, 
+            voice=voice, 
+            speed=speed, 
+            output_dir=output_dir, 
             index=i+1
         )
         
         if file_path:
             generated_files.append(file_path)
+    
+    return generated_files
+
+def main():
+    args = parse_arguments()
+
+    paragraphs = get_paragraphs(args.text_file_path)
+    
+    generated_files = generate_audio_chunks(paragraphs, args.voice, args.speed, args.output_dir, args.delay)
             
     if generated_files:
         # Create output filename based on input text filename
@@ -143,3 +150,6 @@ if __name__ == "__main__":
         print(f"Audiobook saved to: {output_filename}")
         
     print("Done!")
+
+if __name__ == "__main__":
+    main()
