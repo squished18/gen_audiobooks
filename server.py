@@ -39,7 +39,7 @@ else:
     print(f"ERROR: Model not found at {MODEL_PATH}")
 
 @app.post("/speak")
-async def speak(text: str, voice: str = "af_bella"):
+async def speak(text: str, voice: str = "af_bella", speed: float = 1.0):
     if not kokoro:
         raise HTTPException(status_code=500, detail="Model files not found inside container.")
     
@@ -49,7 +49,7 @@ async def speak(text: str, voice: str = "af_bella"):
     samples, sample_rate = kokoro.create(
         text, 
         voice=voice, 
-        speed=1.0, 
+        speed=speed, 
         lang="en-us"
     )
     
