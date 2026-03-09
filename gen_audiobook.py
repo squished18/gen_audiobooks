@@ -4,6 +4,7 @@ import argparse
 import time
 import requests
 import wave
+import subprocess
 
 def get_paragraphs(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -99,6 +100,16 @@ def stitch_wav_files(wav_files, output_path, silence_ms=0):
 
     print(f"Successfully stitched {len(wav_files)} files into {output_path}")
 
+def convert_wav_to_mp3(wav_filename, mp3_filename):
+    print(f"Converting {wav_filename} to MP3...")
+    try:
+        subprocess.run(["ffmpeg", "-y", "-i", wav_filename, mp3_filename], check=True)
+        print(f"Successfully converted to MP3: {mp3_filename}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error converting to MP3: {e}")
+    except FileNotFoundError:
+        print("Error: ffmpeg not found. Please ensure ffmpeg is installed and in your PATH.")
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Generate audiobook from text file using Kokoro TTS Server.")
     parser.add_argument("text_file_path", help="Path to the input text file")
@@ -136,19 +147,32 @@ def generate_audio_chunks(paragraphs, voice, speed, output_dir, delay):
     
     return generated_files
 
-def main():
-    args = parse_arguments()
-
-    paragraphs = get_paragraphs(args.text_file_path)
+def generate_audiobook(text_file_path, voice="af_bella", speed=1.0, output_dir="audio_chunks", silence=200, delay=0.0, output_file=None):
+    paragraphs = get_paragraphs(text_file_path)
     
-    generated_files = generate_audio_chunks(paragraphs, args.voice, args.speed, args.output_dir, args.delay)
+    generated_files = generate_audio_chunks(paragraphs, voice, speed, output_dir, delay)
             
     if generated_files:
         # Create output filename based on input text filename
-        output_filename = os.path.splitext(os.path.basename(args.text_file_path))[0] + ".wav"
-        stitch_wav_files(generated_files, output_filename, silence_ms=args.silence)
+        if output_file:
+             output_filename = output_file
+        else:
+             output_filename = os.path.splitext(os.path.basename(text_file_path))[0] + ".wav"
+             
+        stitch_wav_files(generated_files, output_filename, silence_ms=silence)
         print(f"Audiobook saved to: {output_filename}")
-        
+
+        # Convert to MP3
+        mp3_filename = output_filename.replace(".wav", ".mp3")
+        convert_wav_to_mp3(output_filename, mp3_filename)
+        return mp3_filename
+    else:
+        print("No audio files generated.")
+        return None
+
+def main():
+    args = parse_arguments()
+    generate_audiobook(args.text_file_path, args.voice, args.speed, args.output_dir, args.silence, args.delay)
     print("Done!")
 
 if __name__ == "__main__":
